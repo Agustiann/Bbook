@@ -9,6 +9,11 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Filament\Tables\Filters\TrashedFilter;
+use Filament\Actions\RestoreAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreBulkAction;
+use Filament\Actions\ForceDeleteBulkAction;
 
 class TransactionsTable
 {
@@ -86,10 +91,12 @@ class TransactionsTable
             ])
 
             ->filters([
-                //
+                TrashedFilter::make(),
             ])
 
             ->recordActions([
+                RestoreAction::make(),
+                ForceDeleteAction::make(),
                 Action::make('extendLoan')
                     ->label('Extend')
                     ->icon('heroicon-o-calendar-days')
@@ -238,7 +245,9 @@ class TransactionsTable
                             ? Carbon::parse($record->due_date)->diffInDays($returnedAt)
                             : 0;
 
-                        $fineAmount = $record->book->category->fine_amount;
+                        // dd($record->book->category()->withTrashed()->first());
+
+                        $fineAmount = $record->book->category()->withTrashed()->first()->fine_amount;
 
                         $totalFine = $lateDays * $fineAmount;
 
@@ -305,9 +314,7 @@ class TransactionsTable
                                 ->diffInDays($returnedAt);
                         }
 
-                        $fineAmount = $record->book
-                            ->category
-                            ->fine_amount;
+                        $fineAmount = $record->book->category()->withTrashed()->first()->fine_amount;
 
                         $totalFine = $lateDays * $fineAmount;
 
@@ -328,6 +335,8 @@ class TransactionsTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
+                    RestoreBulkAction::make(),
+                    ForceDeleteBulkAction::make(),
                 ]),
             ]);
     }

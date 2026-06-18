@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 
 class Book extends Model
 {
+    use SoftDeletes;
     protected $fillable = [
         'category_id',
         'title',
@@ -31,16 +33,16 @@ class Book extends Model
 
     public function category(): BelongsTo
     {
-        return $this->belongsTo(BookCategory::class, 'category_id');
+        return $this->belongsTo(BookCategory::class, 'category_id')->withTrashed();
     }
 
     public function creator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, 'created_by')->withTrashed();
     }
 
     public function updater(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'updated_by');
+        return $this->belongsTo(User::class, 'updated_by')->withTrashed();
     }
 }

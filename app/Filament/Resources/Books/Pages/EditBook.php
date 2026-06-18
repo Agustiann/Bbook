@@ -5,6 +5,8 @@ namespace App\Filament\Resources\Books\Pages;
 use App\Filament\Resources\Books\BookResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Actions\RestoreAction;
+use Filament\Actions\ForceDeleteAction;
 
 class EditBook extends EditRecord
 {
@@ -14,6 +16,8 @@ class EditBook extends EditRecord
     {
         return [
             DeleteAction::make(),
+            RestoreAction::make(),
+            ForceDeleteAction::make(),
         ];
     }
 

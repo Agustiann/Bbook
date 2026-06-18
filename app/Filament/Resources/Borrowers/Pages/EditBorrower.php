@@ -5,6 +5,8 @@ namespace App\Filament\Resources\Borrowers\Pages;
 use App\Filament\Resources\Borrowers\BorrowerResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Actions\RestoreAction;
+use Filament\Actions\ForceDeleteAction;
 
 class EditBorrower extends EditRecord
 {
@@ -14,6 +16,8 @@ class EditBorrower extends EditRecord
     {
         return [
             DeleteAction::make(),
+            RestoreAction::make(),
+            ForceDeleteAction::make(),
         ];
     }
 }
