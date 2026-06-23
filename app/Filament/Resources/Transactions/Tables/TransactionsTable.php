@@ -112,25 +112,33 @@ class TransactionsTable
 
                     ->modalHeading(function (Transaction $record) {
 
-                        $isAllowed = Carbon::parse($record->due_date)
-                            ->isSameDay(now()->addDay());
+                        $isAllowed = now()->startOfDay()->gte(
+                            Carbon::parse($record->due_date)
+                                ->copy()
+                                ->subDay()
+                                ->startOfDay()
+                        );
 
                         return $isAllowed
                             ? 'Extend Loan Confirmation'
-                            : 'Perpanjangan Ditolak';
+                            : 'Extension Rejected';
                     })
 
                     ->modalDescription(function (Transaction $record) {
 
-                        $isAllowed = Carbon::parse($record->due_date)
-                            ->isSameDay(now()->addDay());
+                        $isAllowed = now()->startOfDay()->gte(
+                            Carbon::parse($record->due_date)
+                                ->copy()
+                                ->subDay()
+                                ->startOfDay()
+                        );
 
                         if (! $isAllowed) {
 
                             return new \Illuminate\Support\HtmlString("
                                 <div style='text-align:center;padding:20px'>
                                     <p style='margin-bottom:10px'>
-                                        Maaf, perpanjangan peminjaman hanya dapat dilakukan
+                                        Perpanjangan hanya dapat dilakukan mulai
                                         <strong>H-1 sebelum jatuh tempo</strong>.
                                     </p>
 
@@ -141,51 +149,75 @@ class TransactionsTable
                                 </div>
                             ");
                         }
-
                         $maxBorrowDays = $record->book
                             ->category
                             ->max_borrow_days;
-
+                        $fineAmount = $record->book
+                            ->category()
+                            ->withTrashed()
+                            ->first()
+                            ->fine_amount;
+                        $lateDays = now()->startOfDay()->gt(
+                            Carbon::parse($record->due_date)->startOfDay()
+                        )
+                            ? Carbon::parse($record->due_date)
+                            ->startOfDay()
+                            ->diffInDays(now()->startOfDay())
+                            : 0;
+                        $extendFine = $lateDays * $fineAmount;
                         $newDueDate = now()
                             ->copy()
                             ->addDays($maxBorrowDays);
 
                         return new \Illuminate\Support\HtmlString("
                             <div style='text-align:left !important;'>
-                                <table style='width:100%; border-collapse:collapse; text-align:left !important;'>
-                                    <tbody>
+                                <table style='width:100%; border-collapse:collapse;'>
 
-                                        <tr>
-                                            <td style='width:180px; font-weight:bold;'>Borrower</td>
-                                            <td>{$record->borrower->name}</td>
-                                        </tr>
+                                    <tr>
+                                        <td style='width:180px;font-weight:bold;'>Borrower</td>
+                                        <td>{$record->borrower->name}</td>
+                                    </tr>
 
-                                        <tr>
-                                            <td style='font-weight:bold;'>Book</td>
-                                            <td>{$record->book->title}</td>
-                                        </tr>
+                                    <tr>
+                                        <td style='font-weight:bold;'>Book</td>
+                                        <td>{$record->book->title}</td>
+                                    </tr>
 
-                                        <tr>
-                                            <td style='font-weight:bold;'>Borrowed At</td>
-                                            <td>{$record->borrowed_at->format('d M Y')}</td>
-                                        </tr>
+                                    <tr>
+                                        <td style='font-weight:bold;'>Borrowed At</td>
+                                        <td>{$record->borrowed_at->format('d M Y')}</td>
+                                    </tr>
 
-                                        <tr>
-                                            <td style='font-weight:bold;'>Current Due Date</td>
-                                            <td>{$record->due_date->format('d M Y')}</td>
-                                        </tr>
+                                    <tr>
+                                        <td style='font-weight:bold;'>Current Due Date</td>
+                                        <td>{$record->due_date->format('d M Y')}</td>
+                                    </tr>
 
-                                        <tr>
-                                            <td style='font-weight:bold;'>Extension Days</td>
-                                            <td>{$maxBorrowDays} Days</td>
-                                        </tr>
+                                    <tr>
+                                        <td style='font-weight:bold;'>Extension Days</td>
+                                        <td>{$maxBorrowDays} Days</td>
+                                    </tr>
 
-                                        <tr>
-                                            <td style='font-weight:bold;'>New Due Date</td>
-                                            <td>{$newDueDate->format('d M Y')}</td>
-                                        </tr>
+                                    <tr>
+                                        <td style='font-weight:bold;'>Late Days</td>
+                                        <td>{$lateDays} Days</td>
+                                    </tr>
 
-                                    </tbody>
+                                    <tr>
+                                        <td style='font-weight:bold;'>Fine Per Day</td>
+                                        <td>Rp " . number_format($fineAmount, 0, ',', '.') . "</td>
+                                    </tr>
+
+                                    <tr>
+                                        <td style='font-weight:bold;'>Extension Fine</td>
+                                        <td>Rp " . number_format($extendFine, 0, ',', '.') . "</td>
+                                    </tr>
+
+                                    <tr>
+                                        <td style='font-weight:bold;'>New Due Date</td>
+                                        <td>{$newDueDate->format('d M Y')}</td>
+                                    </tr>
+
                                 </table>
                             </div>
                         ");
@@ -193,8 +225,12 @@ class TransactionsTable
 
                     ->modalSubmitAction(
                         fn(Transaction $record) =>
-                        Carbon::parse($record->due_date)
-                            ->isSameDay(now()->addDay())
+                        now()->startOfDay()->gte(
+                            Carbon::parse($record->due_date)
+                                ->copy()
+                                ->subDay()
+                                ->startOfDay()
+                        )
                             ? null
                             : false
                     )
@@ -203,8 +239,12 @@ class TransactionsTable
 
                     ->action(function (Transaction $record) {
 
-                        $isAllowed = Carbon::parse($record->due_date)
-                            ->isSameDay(now()->addDay());
+                        $isAllowed = now()->startOfDay()->gte(
+                            Carbon::parse($record->due_date)
+                                ->copy()
+                                ->subDay()
+                                ->startOfDay()
+                        );
 
                         if (! $isAllowed) {
                             return;
@@ -214,6 +254,19 @@ class TransactionsTable
                             ->category
                             ->max_borrow_days;
 
+                        $fineAmount = $record->book
+                            ->category()
+                            ->withTrashed()
+                            ->first()
+                            ->fine_amount;
+                        $lateDays = now()->startOfDay()->gt(
+                            Carbon::parse($record->due_date)->startOfDay()
+                        )
+                            ? Carbon::parse($record->due_date)
+                            ->startOfDay()
+                            ->diffInDays(now()->startOfDay())
+                            : 0;
+                        $extendFine = $lateDays * $fineAmount;
                         $newDueDate = now()
                             ->copy()
                             ->addDays($maxBorrowDays);
@@ -222,9 +275,10 @@ class TransactionsTable
                             'due_date' => $newDueDate,
                             'status' => 'extended',
                             'extension_count' => $record->extension_count + 1,
+                            'late_days' => ($record->late_days ?? 0) + $lateDays,
+                            'total_fine' => ($record->total_fine ?? 0) + $extendFine,
                         ]);
                     }),
-
                 Action::make('returnBook')
                     ->label('Return')
                     ->icon('heroicon-o-arrow-uturn-left')
