@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Books\Schemas;
 
 use App\Models\BookCategory;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
@@ -42,20 +43,37 @@ class BookForm
                     ->label('Stok')
                     ->numeric()
                     ->live()
-                    ->afterStateUpdated(function ($state, callable $set) {
+                    ->afterStateHydrated(function ($state, callable $set, $record) {
+                        $category = BookCategory::getCategoryByStock((int) $state);
 
-                        if ((int) $state >= 50) {
-                            $category = BookCategory::where('category_name', 'Reguler')->first();
-                        } elseif ((int) $state >= 21) {
-                            $category = BookCategory::where('category_name', 'Premium')->first();
-                        } else {
-                            $category = BookCategory::where('category_name', 'Langka')->first();
+                        if ($category) {
+                            $set('category_id', $category->id);
+                            $set('category_name', $category->category_name);
+                        } elseif ($record) {
+                            $set('category_id', $record->category_id);
+                            $set('category_name', $record->category?->category_name);
                         }
+                    })
+                    ->afterStateUpdated(function ($state, callable $set, $record) {
+                        $category = BookCategory::getCategoryByStock((int) $state);
 
-                        $set('category_id', $category?->id);
-                        $set('category_name', $category?->category_name);
+                        if ($category) {
+                            $set('category_id', $category->id);
+                            $set('category_name', $category->category_name);
+                        } elseif ($record) {
+                            $set('category_id', $record->category_id);
+                            $set('category_name', $record->category?->category_name);
+                        }
                     })
                     ->required(),
+                FileUpload::make('photo')
+                    ->label('Foto Buku')
+                    ->image()
+                    ->imageEditor()
+                    ->directory('books')
+                    ->disk('public')
+                    ->maxSize(2048)
+                    ->columnSpanFull(),
             ]);
     }
 }

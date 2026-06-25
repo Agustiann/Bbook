@@ -14,18 +14,18 @@ class BorrowerForm
             ->components([
                 TextInput::make('name')
                     ->required(),
+                TextInput::make('email')
+                    ->email()
+                    ->required(),
+                TextInput::make('password')
+                    ->password()
+                    ->required()
+                    ->dehydrateStateUsing(fn($state) => bcrypt($state))
+                    ->dehydrated(fn($state) => filled($state)),
                 TextInput::make('phone')
-                    ->tel()
                     ->required(),
                 Textarea::make('address')
-                    ->required()
-                    ->columnSpanFull(),
-                TextInput::make('created_by')
-                    ->numeric()
-                    ->default(null),
-                TextInput::make('updated_by')
-                    ->numeric()
-                    ->default(null),
+                    ->required(),
             ]);
     }
 }

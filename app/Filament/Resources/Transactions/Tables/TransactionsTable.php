@@ -7,13 +7,13 @@ use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Table;
-use Filament\Tables\Filters\TrashedFilter;
-use Filament\Actions\RestoreAction;
 use Filament\Actions\ForceDeleteAction;
-use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ForceDeleteBulkAction;
+use Filament\Actions\RestoreAction;
+use Filament\Actions\RestoreBulkAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TrashedFilter;
+use Filament\Tables\Table;
 
 class TransactionsTable
 {
@@ -380,7 +380,6 @@ class TransactionsTable
                                 ? 'late'
                                 : 'returned',
                         ]);
-
                         $record->book->increment('stock');
                     }),
 

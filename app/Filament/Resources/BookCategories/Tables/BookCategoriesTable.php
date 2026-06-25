@@ -27,6 +27,13 @@ class BookCategoriesTable
                 TextColumn::make('max_borrow_days')
                     ->numeric()
                     ->sortable(),
+                TextColumn::make('min_stock')
+                    ->label('Min Stok')
+                    ->sortable(),
+                TextColumn::make('max_stock')
+                    ->label('Max Stok')
+                    ->sortable()
+                    ->formatStateUsing(fn($state) => $state ?? '∞'),
                 TextColumn::make('creator.name')
                     ->label('Created By')
                     ->searchable()

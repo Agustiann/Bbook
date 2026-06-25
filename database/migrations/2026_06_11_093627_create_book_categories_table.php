@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('book_categories', function (Blueprint $table) {
@@ -18,6 +15,9 @@ return new class extends Migration
             $table->integer('fine_amount')->default(0);
             $table->integer('max_borrow_days');
 
+            $table->integer('min_stock')->default(0);
+            $table->integer('max_stock')->nullable();
+
             $table->foreignId('created_by')
                 ->nullable()
                 ->constrained('users');
@@ -25,14 +25,12 @@ return new class extends Migration
             $table->foreignId('updated_by')
                 ->nullable()
                 ->constrained('users');
+
             $table->softDeletes();
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('book_categories');

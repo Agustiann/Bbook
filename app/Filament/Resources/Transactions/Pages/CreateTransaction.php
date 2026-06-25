@@ -6,9 +6,11 @@ use App\Filament\Resources\Transactions\TransactionResource;
 use App\Models\Book;
 use App\Models\Borrower;
 use App\Models\Transaction;
+use App\Models\User;
 use Carbon\Carbon;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CreateTransaction extends CreateRecord
@@ -19,13 +21,26 @@ class CreateTransaction extends CreateRecord
     {
         if ($data['borrower_type'] === 'new') {
 
-            $borrower = Borrower::create([
-                'name' => $data['borrower_name'],
-                'phone' => $data['borrower_phone'],
-                'address' => $data['borrower_address'],
-            ]);
+            DB::transaction(function () use (&$data) {
 
-            $data['borrower_id'] = $borrower->id;
+                $user = User::create([
+                    'type_user' => 'Borrower',
+                    'name'      => $data['borrower_name'],
+                    'email'     => $data['borrower_email'],
+                    'password'  => $data['borrower_password'],
+                ]);
+
+                $user->assignRole('Borrower');
+
+                $borrower = Borrower::create([
+                    'user_id' => $user->id,
+                    'name'    => $data['borrower_name'],
+                    'phone'   => $data['borrower_phone'],
+                    'address' => $data['borrower_address'],
+                ]);
+
+                $data['borrower_id'] = $borrower->id;
+            });
         }
 
         $book = Book::with('category')->findOrFail($data['book_id']);
@@ -51,7 +66,6 @@ class CreateTransaction extends CreateRecord
         $data['user_id'] = Auth::id();
 
         $data['borrowed_at'] = now();
-
         $data['returned_at'] = null;
 
         $data['due_date'] = Carbon::now()->addDays(
@@ -59,15 +73,16 @@ class CreateTransaction extends CreateRecord
         );
 
         $data['late_days'] = 0;
-
         $data['total_fine'] = 0;
-
         $data['status'] = 'borrowed';
         $data['extension_count'] = 0;
 
         unset(
             $data['borrower_type'],
             $data['borrower_name'],
+            $data['borrower_email'],
+            $data['borrower_password'],
+            $data['borrower_password_confirmation'],
             $data['borrower_phone'],
             $data['borrower_address']
         );

@@ -2,22 +2,29 @@
 
 namespace App\Filament\Resources\Books\Tables;
 
+use App\Filament\Resources\Books\BookResource;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Table;
-use Filament\Tables\Filters\TrashedFilter;
-use Filament\Actions\RestoreAction;
 use Filament\Actions\ForceDeleteAction;
-use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ForceDeleteBulkAction;
+use Filament\Actions\RestoreAction;
+use Filament\Actions\RestoreBulkAction;
+use Filament\Actions\ViewAction;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TrashedFilter;
+use Filament\Tables\Table;
 
 class BooksTable
 {
     public static function configure(Table $table): Table
     {
         return $table
+            ->recordUrl(
+                fn($record) => BookResource::getUrl('view', [
+                    'record' => $record,
+                ])
+            )
             ->columns([
                 TextColumn::make('category.category_name')
                     ->searchable()
@@ -53,6 +60,7 @@ class BooksTable
                 TrashedFilter::make(),
             ])
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
                 RestoreAction::make(),
                 ForceDeleteAction::make(),

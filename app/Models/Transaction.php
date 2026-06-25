@@ -39,6 +39,29 @@ class Transaction extends Model
         static::updating(function ($model) {
             $model->updated_by = Auth::id();
         });
+        static::deleting(function (Transaction $transaction) {
+
+            if (
+                in_array($transaction->status, [
+                    'borrowed',
+                    'extended',
+                ])
+            ) {
+                $transaction->book()->withTrashed()->first()?->increment('stock');
+            }
+        });
+
+        static::restored(function (Transaction $transaction) {
+
+            if (
+                in_array($transaction->status, [
+                    'borrowed',
+                    'extended',
+                ])
+            ) {
+                $transaction->book()->withTrashed()->first()?->decrement('stock');
+            }
+        });
     }
 
     public function borrower(): BelongsTo

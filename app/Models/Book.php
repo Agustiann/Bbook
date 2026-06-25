@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 
@@ -17,6 +18,7 @@ class Book extends Model
         'publisher',
         'publication_year',
         'stock',
+        'photo',
     ];
 
     protected static function booted(): void
@@ -31,6 +33,10 @@ class Book extends Model
         });
     }
 
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
     public function category(): BelongsTo
     {
         return $this->belongsTo(BookCategory::class, 'category_id')->withTrashed();

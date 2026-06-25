@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Transactions\Schemas;
 
 use App\Models\Book;
 use App\Models\Transaction;
+use App\Models\User;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -45,7 +46,25 @@ class TransactionForm
                     ->label('Phone Number')
                     ->visible(fn($get) => $get('borrower_type') === 'new')
                     ->required(fn($get) => $get('borrower_type') === 'new'),
-
+                TextInput::make('borrower_email')
+                    ->email()
+                    ->required(fn($get) => $get('borrower_type') === 'new')
+                    ->visible(fn($get) => $get('borrower_type') === 'new')
+                    ->unique(User::class, 'email')
+                    ->autocomplete('off'),
+                TextInput::make('borrower_password')
+                    ->label('Password')
+                    ->password()
+                    ->required(fn($get) => $get('borrower_type') === 'new')
+                    ->visible(fn($get) => $get('borrower_type') === 'new')
+                    ->confirmed()
+                    ->autocomplete('new-password'),
+                TextInput::make('borrower_password_confirmation')
+                    ->label('Konfirmasi Password')
+                    ->password()
+                    ->required(fn($get) => $get('borrower_type') === 'new')
+                    ->visible(fn($get) => $get('borrower_type') === 'new')
+                    ->autocomplete('new-password'),
                 Textarea::make('borrower_address')
                     ->label('Address')
                     ->visible(fn($get) => $get('borrower_type') === 'new')

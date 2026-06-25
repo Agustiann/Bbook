@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Books;
 use App\Filament\Resources\Books\Pages\CreateBook;
 use App\Filament\Resources\Books\Pages\EditBook;
 use App\Filament\Resources\Books\Pages\ListBooks;
+use App\Filament\Resources\Books\Pages\ViewBook;
 use App\Filament\Resources\Books\Schemas\BookForm;
 use App\Filament\Resources\Books\Tables\BooksTable;
 use App\Models\Book;
@@ -19,9 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class BookResource extends Resource
 {
     protected static ?string $model = Book::class;
-
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
-
     protected static ?string $recordTitleAttribute = 'title';
     public static function getNavigationGroup(): ?string
     {
@@ -37,18 +36,12 @@ class BookResource extends Resource
         return BooksTable::configure($table);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
     public static function getPages(): array
     {
         return [
             'index' => ListBooks::route('/'),
             'create' => CreateBook::route('/create'),
+            'view' => ViewBook::route('/{record}'),
             'edit' => EditBook::route('/{record}/edit'),
         ];
     }
@@ -59,5 +52,12 @@ class BookResource extends Resource
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            RelationManagers\TransactionsRelationManager::class,
+        ];
     }
 }

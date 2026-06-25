@@ -14,6 +14,8 @@ class BookCategory extends Model
         'category_name',
         'fine_amount',
         'max_borrow_days',
+        'min_stock',
+        'max_stock',
     ];
 
     protected static function booted(): void
@@ -36,5 +38,16 @@ class BookCategory extends Model
     public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by')->withTrashed();
+    }
+
+    public static function getCategoryByStock(int $stock): ?self
+    {
+        return self::query()
+            ->where('min_stock', '<=', $stock)
+            ->where(function ($query) use ($stock) {
+                $query->where('max_stock', '>=', $stock)
+                    ->orWhereNull('max_stock');
+            })
+            ->first();
     }
 }
