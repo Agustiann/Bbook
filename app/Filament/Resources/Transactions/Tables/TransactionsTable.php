@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Transactions\Tables;
 
+use App\Models\Borrower;
 use App\Models\Transaction;
 use Carbon\Carbon;
 use Filament\Actions\Action;
@@ -14,17 +15,39 @@ use Filament\Actions\RestoreBulkAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class TransactionsTable
 {
+    protected static function borrower(): ?Borrower
+    {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+
+        if (! $user?->hasRole('Borrower')) {
+            return null;
+        }
+
+        return $user->borrower;
+    }
+
     public static function configure(Table $table): Table
     {
         return $table
-            ->columns([
+            ->modifyQueryUsing(function ($query) {
 
+                if (static::borrower()) {
+                    $query->where('borrower_id', static::borrower()->id);
+                }
+
+                return $query;
+            })
+
+            ->columns([
                 TextColumn::make('borrower.name')
                     ->label('Borrower')
-                    ->searchable(),
+                    ->searchable()
+                    ->visible(fn () => ! static::borrower()),
 
                 TextColumn::make('book.title')
                     ->label('Book')
@@ -32,7 +55,8 @@ class TransactionsTable
 
                 TextColumn::make('user.name')
                     ->label('Officer')
-                    ->searchable(),
+                    ->searchable()
+                    ->visible(fn () => ! static::borrower()),
 
                 TextColumn::make('borrowed_at')
                     ->label('Borrowed At')
@@ -73,21 +97,25 @@ class TransactionsTable
 
                 TextColumn::make('creator.name')
                     ->label('Created By')
-                    ->searchable(),
+                    ->searchable()
+                    ->visible(fn () => ! static::borrower()),
 
                 TextColumn::make('updater.name')
                     ->label('Updated By')
-                    ->searchable(),
+                    ->searchable()
+                    ->visible(fn () => ! static::borrower()),
 
                 TextColumn::make('created_at')
                     ->label('Created At')
                     ->dateTime()
-                    ->sortable(),
+                    ->sortable()
+                    ->visible(fn () => ! static::borrower()),
 
                 TextColumn::make('updated_at')
                     ->label('Updated At')
                     ->dateTime()
-                    ->sortable(),
+                    ->sortable()
+                    ->visible(fn () => ! static::borrower()),
             ])
 
             ->filters([
@@ -168,51 +196,41 @@ class TransactionsTable
                         $newDueDate = now()
                             ->copy()
                             ->addDays($maxBorrowDays);
-
                         return new \Illuminate\Support\HtmlString("
                             <div style='text-align:left !important;'>
                                 <table style='width:100%; border-collapse:collapse;'>
-
                                     <tr>
                                         <td style='width:180px;font-weight:bold;'>Borrower</td>
                                         <td>{$record->borrower->name}</td>
                                     </tr>
-
                                     <tr>
                                         <td style='font-weight:bold;'>Book</td>
                                         <td>{$record->book->title}</td>
                                     </tr>
-
                                     <tr>
                                         <td style='font-weight:bold;'>Borrowed At</td>
                                         <td>{$record->borrowed_at->format('d M Y')}</td>
                                     </tr>
-
                                     <tr>
                                         <td style='font-weight:bold;'>Current Due Date</td>
                                         <td>{$record->due_date->format('d M Y')}</td>
                                     </tr>
-
                                     <tr>
                                         <td style='font-weight:bold;'>Extension Days</td>
                                         <td>{$maxBorrowDays} Days</td>
                                     </tr>
-
                                     <tr>
                                         <td style='font-weight:bold;'>Late Days</td>
                                         <td>{$lateDays} Days</td>
                                     </tr>
-
                                     <tr>
                                         <td style='font-weight:bold;'>Fine Per Day</td>
                                         <td>Rp " . number_format($fineAmount, 0, ',', '.') . "</td>
                                     </tr>
-
                                     <tr>
                                         <td style='font-weight:bold;'>Extension Fine</td>
                                         <td>Rp " . number_format($extendFine, 0, ',', '.') . "</td>
                                     </tr>
-
                                     <tr>
                                         <td style='font-weight:bold;'>New Due Date</td>
                                         <td>{$newDueDate->format('d M Y')}</td>
@@ -222,7 +240,6 @@ class TransactionsTable
                             </div>
                         ");
                     })
-
                     ->modalSubmitAction(
                         fn(Transaction $record) =>
                         now()->startOfDay()->gte(
@@ -234,22 +251,17 @@ class TransactionsTable
                             ? null
                             : false
                     )
-
                     ->requiresConfirmation()
-
                     ->action(function (Transaction $record) {
-
                         $isAllowed = now()->startOfDay()->gte(
                             Carbon::parse($record->due_date)
                                 ->copy()
                                 ->subDay()
                                 ->startOfDay()
                         );
-
                         if (! $isAllowed) {
                             return;
                         }
-
                         $maxBorrowDays = $record->book
                             ->category
                             ->max_borrow_days;
@@ -270,7 +282,6 @@ class TransactionsTable
                         $newDueDate = now()
                             ->copy()
                             ->addDays($maxBorrowDays);
-
                         $record->update([
                             'due_date' => $newDueDate,
                             'status' => 'extended',
@@ -283,28 +294,19 @@ class TransactionsTable
                     ->label('Return')
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->color('success')
-
                     ->visible(
                         fn(Transaction $record) =>
                         in_array($record->status, ['borrowed', 'extended'])
                     )
-
                     ->modalHeading('Book Return Confirmation')
-
                     ->modalDescription(function (Transaction $record) {
-
                         $returnedAt = now();
-
                         $lateDays = $returnedAt->gt($record->due_date)
                             ? Carbon::parse($record->due_date)->diffInDays($returnedAt)
                             : 0;
-
                         // dd($record->book->category()->withTrashed()->first());
-
                         $fineAmount = $record->book->category()->withTrashed()->first()->fine_amount;
-
                         $totalFine = $lateDays * $fineAmount;
-
                         return new \Illuminate\Support\HtmlString("
                             <div style='text-align:left !important;'>
                                 <table style='width:100%; border-collapse:collapse; text-align:left !important;'>
@@ -313,37 +315,30 @@ class TransactionsTable
                                             <td style='width:180px; font-weight:bold; text-align:left;'>Borrower</td>
                                             <td style='text-align:left;'>{$record->borrower->name}</td>
                                         </tr>
-
                                         <tr>
                                             <td style='font-weight:bold; text-align:left;'>Book</td>
                                             <td style='text-align:left;'>{$record->book->title}</td>
                                         </tr>
-
                                         <tr>
                                             <td style='font-weight:bold; text-align:left;'>Borrowed At</td>
                                             <td style='text-align:left;'>{$record->borrowed_at->format('d M Y')}</td>
                                         </tr>
-
                                         <tr>
                                             <td style='font-weight:bold; text-align:left;'>Due Date</td>
                                             <td style='text-align:left;'>{$record->due_date->format('d M Y')}</td>
                                         </tr>
-
                                         <tr>
                                             <td style='font-weight:bold; text-align:left;'>Returned At</td>
                                             <td style='text-align:left;'>{$returnedAt->format('d M Y')}</td>
                                         </tr>
-
                                         <tr>
                                             <td style='font-weight:bold; text-align:left;'>Late Days</td>
                                             <td style='text-align:left;'>{$lateDays}</td>
                                         </tr>
-
                                         <tr>
                                             <td style='font-weight:bold; text-align:left;'>Fine Per Day</td>
                                             <td style='text-align:left;'>Rp " . number_format($fineAmount, 0, ',', '.') . "</td>
                                         </tr>
-
                                         <tr>
                                             <td style='font-weight:bold; text-align:left;'>Total Fine</td>
                                             <td style='text-align:left;'>Rp " . number_format($totalFine, 0, ',', '.') . "</td>
@@ -353,21 +348,15 @@ class TransactionsTable
                             </div>
                         ");
                     })
-
                     ->requiresConfirmation()
-
                     ->action(function (Transaction $record) {
-
                         $returnedAt = now();
-
                         $lateDays = 0;
-
                         if ($returnedAt->gt($record->due_date)) {
 
                             $lateDays = Carbon::parse($record->due_date)
                                 ->diffInDays($returnedAt);
                         }
-
                         $fineAmount = $record->book->category()->withTrashed()->first()->fine_amount;
 
                         $totalFine = $lateDays * $fineAmount;
@@ -384,7 +373,6 @@ class TransactionsTable
                     }),
 
             ])
-
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),

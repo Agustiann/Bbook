@@ -1,23 +1,17 @@
 <?php
 
-namespace App\Filament\Pages;
+namespace App\Filament\Resources\BookCatalogs\Pages;
 
+use App\Filament\Resources\BookCatalogs\BookCatalogResource;
 use App\Models\Book;
 use App\Models\Transaction;
 use Filament\Notifications\Notification;
-use Filament\Pages\Page;
+use Filament\Resources\Pages\ListRecords;
 use Illuminate\Support\Facades\Auth;
 
-class BookCatalog extends Page
+class ListBookCatalogs extends ListRecords
 {
-    protected string $view = 'filament.pages.book-catalog';
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-book-open';
-    protected static ?string $navigationLabel = 'Book Catalog';
-
-    public function getBooks()
-    {
-        return Book::with('category')->get();
-    }
+    protected static string $resource = BookCatalogResource::class;
 
     public function borrow(int $bookId): void
     {

@@ -16,12 +16,27 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 class BookResource extends Resource
 {
     protected static ?string $model = Book::class;
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
     protected static ?string $recordTitleAttribute = 'title';
+
+    protected static function isBorrower(): bool
+    {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+
+        return $user?->hasRole('Borrower') ?? false;
+    }
+    
+    public static function shouldRegisterNavigation(): bool
+    {
+        return ! static::isBorrower();
+    }
+
     public static function getNavigationGroup(): ?string
     {
         return 'Master Data';
@@ -45,7 +60,7 @@ class BookResource extends Resource
             'edit' => EditBook::route('/{record}/edit'),
         ];
     }
-    
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
