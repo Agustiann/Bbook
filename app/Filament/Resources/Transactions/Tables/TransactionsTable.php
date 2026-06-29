@@ -47,7 +47,7 @@ class TransactionsTable
                 TextColumn::make('borrower.name')
                     ->label('Borrower')
                     ->searchable()
-                    ->visible(fn () => ! static::borrower()),
+                    ->visible(fn() => ! static::borrower()),
 
                 TextColumn::make('book.title')
                     ->label('Book')
@@ -56,7 +56,7 @@ class TransactionsTable
                 TextColumn::make('user.name')
                     ->label('Officer')
                     ->searchable()
-                    ->visible(fn () => ! static::borrower()),
+                    ->visible(fn() => ! static::borrower()),
 
                 TextColumn::make('borrowed_at')
                     ->label('Borrowed At')
@@ -98,24 +98,24 @@ class TransactionsTable
                 TextColumn::make('creator.name')
                     ->label('Created By')
                     ->searchable()
-                    ->visible(fn () => ! static::borrower()),
+                    ->visible(fn() => ! static::borrower()),
 
                 TextColumn::make('updater.name')
                     ->label('Updated By')
                     ->searchable()
-                    ->visible(fn () => ! static::borrower()),
+                    ->visible(fn() => ! static::borrower()),
 
                 TextColumn::make('created_at')
                     ->label('Created At')
                     ->dateTime()
                     ->sortable()
-                    ->visible(fn () => ! static::borrower()),
+                    ->visible(fn() => ! static::borrower()),
 
                 TextColumn::make('updated_at')
                     ->label('Updated At')
                     ->dateTime()
                     ->sortable()
-                    ->visible(fn () => ! static::borrower()),
+                    ->visible(fn() => ! static::borrower()),
             ])
 
             ->filters([
@@ -301,9 +301,12 @@ class TransactionsTable
                     ->modalHeading('Book Return Confirmation')
                     ->modalDescription(function (Transaction $record) {
                         $returnedAt = now();
-                        $lateDays = $returnedAt->gt($record->due_date)
-                            ? Carbon::parse($record->due_date)->diffInDays($returnedAt)
-                            : 0;
+                        $lateDays = 0;
+                        if ($returnedAt->gt($record->due_date)) {
+                            $lateHours = Carbon::parse($record->due_date)
+                                ->diffInHours($returnedAt);
+                            $lateDays = floor($lateHours / 24);
+                        }
                         // dd($record->book->category()->withTrashed()->first());
                         $fineAmount = $record->book->category()->withTrashed()->first()->fine_amount;
                         $totalFine = $lateDays * $fineAmount;
@@ -353,9 +356,10 @@ class TransactionsTable
                         $returnedAt = now();
                         $lateDays = 0;
                         if ($returnedAt->gt($record->due_date)) {
+                            $lateHours = Carbon::parse($record->due_date)
+                                ->diffInHours($returnedAt);
 
-                            $lateDays = Carbon::parse($record->due_date)
-                                ->diffInDays($returnedAt);
+                            $lateDays = floor($lateHours / 24);
                         }
                         $fineAmount = $record->book->category()->withTrashed()->first()->fine_amount;
 
