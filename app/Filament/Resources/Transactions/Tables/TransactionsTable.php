@@ -7,13 +7,9 @@ use App\Models\Transaction;
 use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\ForceDeleteAction;
-use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
 
@@ -117,14 +113,8 @@ class TransactionsTable
                     ->sortable()
                     ->visible(fn() => ! static::borrower()),
             ])
-
-            ->filters([
-                TrashedFilter::make(),
-            ])
-
             ->recordActions([
                 RestoreAction::make(),
-                ForceDeleteAction::make(),
                 Action::make('extendLoan')
                     ->label('Extend')
                     ->icon('heroicon-o-calendar-days')
@@ -379,9 +369,7 @@ class TransactionsTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
                     RestoreBulkAction::make(),
-                    ForceDeleteBulkAction::make(),
                 ]),
             ]);
     }
