@@ -8,6 +8,7 @@ use App\Filament\Resources\Books\Pages\ListBooks;
 use App\Filament\Resources\Books\Pages\ViewBook;
 use App\Filament\Resources\Books\Schemas\BookForm;
 use App\Filament\Resources\Books\Tables\BooksTable;
+use App\Filament\Resources\Books\Tables\BookCatalogTable;
 use App\Models\Book;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -24,22 +25,22 @@ class BookResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
     protected static ?string $recordTitleAttribute = 'title';
 
-    protected static function isBorrower(): bool
+    public static function isBorrower(): bool
     {
         /** @var \App\Models\User|null $user */
         $user = Auth::user();
 
         return $user?->hasRole('Borrower') ?? false;
     }
-    
-    public static function shouldRegisterNavigation(): bool
+
+    public static function getNavigationLabel(): string
     {
-        return ! static::isBorrower();
+        return static::isBorrower() ? 'Book Catalog' : 'Books';
     }
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Master Data';
+        return static::isBorrower() ? null : 'Master Data';
     }
     public static function form(Schema $schema): Schema
     {
@@ -48,11 +49,18 @@ class BookResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return BooksTable::configure($table);
+        return static::isBorrower()
+            ? BookCatalogTable::configure($table)
+            : BooksTable::configure($table);
     }
 
     public static function getPages(): array
     {
+        if (static::isBorrower()) {
+            return [
+                'index' => ListBooks::route('/'),
+            ];
+        }
         return [
             'index' => ListBooks::route('/'),
             'create' => CreateBook::route('/create'),
@@ -71,8 +79,8 @@ class BookResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            RelationManagers\TransactionsRelationManager::class,
-        ];
+        return static::isBorrower()
+            ? []
+            : [RelationManagers\TransactionsRelationManager::class];
     }
 }
