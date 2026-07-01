@@ -8,10 +8,13 @@ use App\Models\Borrower;
 use App\Models\Transaction;
 use App\Models\User;
 use Carbon\Carbon;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Exceptions\RoleDoesNotExist;
+use Spatie\Permission\Models\Role;
 
 class CreateTransaction extends CreateRecord
 {
@@ -21,16 +24,31 @@ class CreateTransaction extends CreateRecord
     {
         if ($data['borrower_type'] === 'new') {
 
-            DB::transaction(function () use (&$data) {
+            try {
+                $role = Role::findByName('Borrower', 'web');
+            } catch (RoleDoesNotExist $e) {
+
+                Notification::make()
+                    ->title('Role Borrower tidak ditemukan')
+                    ->body('Silakan buat role Borrower terlebih dahulu sebelum menambahkan data peminjam baru.')
+                    ->danger()
+                    ->persistent()
+                    ->send();
+
+                throw ValidationException::withMessages([
+                    'borrower_name' => 'Role Borrower belum tersedia.',
+                ]);
+            }
+
+            DB::transaction(function () use (&$data, $role) {
 
                 $user = User::create([
-                    'type_user' => 'Borrower',
-                    'name'      => $data['borrower_name'],
-                    'email'     => $data['borrower_email'],
-                    'password'  => $data['borrower_password'],
+                    'name'     => $data['borrower_name'],
+                    'email'    => $data['borrower_email'],
+                    'password' => $data['borrower_password'],
                 ]);
 
-                $user->assignRole('Borrower');
+                $user->assignRole($role);
 
                 $borrower = Borrower::create([
                     'user_id' => $user->id,

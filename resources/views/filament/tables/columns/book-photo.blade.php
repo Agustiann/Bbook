@@ -1,10 +1,12 @@
 @php
+    use Illuminate\Support\Facades\Storage;
+
     $photo = $getRecord()->photo;
 @endphp
 
 @if (filled($photo))
     <img
-        src="{{ route('book.image', ['path' => $photo]) }}"
+        src="{{ Storage::disk('public')->url($photo) }}"
         alt="Book"
         style="
             width:150px;

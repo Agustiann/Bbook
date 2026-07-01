@@ -45,10 +45,8 @@ class BookInfolist
                     ->schema([
                         ImageEntry::make('photo')
                             ->hiddenLabel()
-                            ->getStateUsing(fn($record) => route('book.image', [
-                                'path' => $record->photo,
-                            ]))
-                            ->visible(fn($record) => filled($record->photo)),
+                            ->disk('public')
+                            ->height(250),
 
                         TextEntry::make('info')
                             ->hiddenLabel()

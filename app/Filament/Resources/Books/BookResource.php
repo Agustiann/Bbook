@@ -27,7 +27,6 @@ class BookResource extends Resource
 
     public static function isBorrower(): bool
     {
-        /** @var \App\Models\User|null $user */
         $user = Auth::user();
 
         return $user?->hasRole('Borrower') ?? false;

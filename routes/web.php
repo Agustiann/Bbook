@@ -4,12 +4,25 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 
-Route::get('/book-image/{path}', function (string $path) {
-    abort_unless(Auth::check(), 403);
+Route::get('/private/avatar/{filename}', function (string $filename) {
+    if (! Auth::check()) {
+        abort(403);
+    }
 
-    $disk = Storage::disk('private');
+    $path = 'profile-photos/' . $filename;
 
-    abort_unless($disk->exists($path), 404);
+    abort_unless(Storage::disk('local')->exists($path), 404);
 
-    return response()->file($disk->path($path));
-})->where('path', '.*')->name('book.image');
+    $user = Auth::user();
+    $avatarColumn = config('filament-edit-profile.avatar_column', 'avatar_url');
+    $userAvatarPath = $user->$avatarColumn;
+
+    if ($userAvatarPath !== $path && basename($userAvatarPath) !== $filename) {
+        abort(403);
+    }
+
+    return response()->file(
+        Storage::disk('local')->path($path),
+        ['Content-Type' => mime_content_type(Storage::disk('local')->path($path))]
+    );
+})->name('private.avatar');

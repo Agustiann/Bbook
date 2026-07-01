@@ -71,8 +71,6 @@ class BookForm
                     ->image()
                     ->imageEditor()
                     ->directory('books')
-                    ->disk('private')
-                    ->visibility('private')
                     ->maxSize(2048)
                     ->columnSpanFull(),
             ]);
